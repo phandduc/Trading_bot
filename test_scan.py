@@ -33,7 +33,10 @@ def test_single_scan():
         
         # 4. Chạy phân tích chiến lược
         print("\n--- Đang phân tích kỹ thuật và chiến lược ---")
-        signal, skip_reason = strategy.analyze_market(actual_sym, df_h1, df_m15)
+        import MetaTrader5 as mt5
+        sym_info = mt5.symbol_info(actual_sym)
+        current_spread = sym_info.spread if sym_info is not None else 0.0
+        signal, skip_reason = strategy.analyze_market(actual_sym, df_h1, df_m15, current_spread=current_spread)
         
         if signal is not None:
             print("\n🚀 PHÁT HIỆN TÍN HIỆU GIAO DỊCH:")

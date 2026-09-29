@@ -7,6 +7,16 @@ import strategy
 import config
 import indicators
 
+def estimate_bar_count(days, timeframe):
+    """
+    Ước lượng số nến cần tải theo số ngày lịch.
+    MT5 không có nến cuối tuần cho FX/Gold nên nếu dùng 96 nến/ngày trực tiếp
+    sẽ vô tình kéo dữ liệu xa hơn nhiều so với khoảng ngày người dùng nhập.
+    """
+    bars_per_day = 96 if timeframe == "M15" else 24
+    trading_day_ratio = 5.0 / 7.0
+    return int(days * bars_per_day * trading_day_ratio) + 300
+
 def get_clean_h1_slice(df_h1, df_m15_slice, current_time):
     """
     Tạo DataFrame H1 không có lookahead bias bằng cách loại bỏ phần nến H1 tương lai 
@@ -121,51 +131,84 @@ def run_simulation(df_m15, df_h1, symbol_name, tp_mode="H1_SWING"):
             status = ""
             
             if active_trade['type'] == 'BUY':
-                if current_low <= active_trade['sl']:
+                hit_sl = current_low <= active_trade['sl']
+                hit_tp = current_high >= active_trade['tp']
+                if hit_sl and hit_tp:
+                    # Nến chạm cả SL và TP: dùng thứ tự dựa trên khoảng cách từ Open nến hiện tại.
+                    # Cách này trung tính hơn luôn ưu tiên SL trong dữ liệu OHLC không có tick.
+                    bar_open = current_m15_row['open']
+                    sl_dist = abs(bar_open - active_trade['sl'])
+                    tp_dist = abs(bar_open - active_trade['tp'])
+                    if tp_dist <= sl_dist:
+                        closed = True
+                        exit_price = active_trade['tp']
+                        status = "TP"
+                    else:
+                        closed = True
+                        exit_price = active_trade['sl']
+                        status = "SL" if not active_trade['be_moved'] else "BE"
+                elif hit_sl:
                     closed = True
                     exit_price = active_trade['sl']
                     status = "SL" if not active_trade['be_moved'] else "BE"
-                elif current_high >= active_trade['tp']:
+                elif hit_tp:
                     closed = True
                     exit_price = active_trade['tp']
                     status = "TP"
             else: # SELL
-                if current_high >= active_trade['sl']:
+                hit_sl = current_high >= active_trade['sl']
+                hit_tp = current_low <= active_trade['tp']
+                if hit_sl and hit_tp:
+                    bar_open = current_m15_row['open']
+                    sl_dist = abs(bar_open - active_trade['sl'])
+                    tp_dist = abs(bar_open - active_trade['tp'])
+                    if tp_dist <= sl_dist:
+                        closed = True
+                        exit_price = active_trade['tp']
+                        status = "TP"
+                    else:
+                        closed = True
+                        exit_price = active_trade['sl']
+                        status = "SL" if not active_trade['be_moved'] else "BE"
+                elif hit_sl:
                     closed = True
                     exit_price = active_trade['sl']
                     status = "SL" if not active_trade['be_moved'] else "BE"
-                elif current_low <= active_trade['tp']:
+                elif hit_tp:
                     closed = True
                     exit_price = active_trade['tp']
                     status = "TP"
                     
             if closed:
                 # Tính toán PnL giả lập tiền tệ dựa trên tài khoản 10k, rủi ro 1% (100 USD)
-                pnl_usd = 0.0
+                base_pnl_usd = 0.0
+                trade_risk_mult = float(active_trade.get('risk_mult', 1.0))
                 if tp_mode == 'PARTIAL_1.5':
                     if status == 'TP':
                         # Thắng toàn bộ: 50% ăn 1.5 RR (+75 USD), 50% ăn H1 Swing RR
                         rr_h1 = abs(active_trade['tp'] - entry) / risk_dist
-                        pnl_usd = 50.0 * 1.5 + 50.0 * rr_h1
+                        base_pnl_usd = 50.0 * 1.5 + 50.0 * rr_h1
                     else: # SL hoặc BE
                         if active_trade['partial_taken']:
                             # Đã ăn 50% tại 1.5 RR (+75 USD), 50% còn lại đóng ở exit_price
                             remaining_risk_ratio = (exit_price - entry) / risk_dist if active_trade['type'] == 'BUY' else (entry - exit_price) / risk_dist
-                            pnl_usd = 50.0 * 1.5 + 50.0 * remaining_risk_ratio
+                            base_pnl_usd = 50.0 * 1.5 + 50.0 * remaining_risk_ratio
                         elif active_trade['be_moved']:
-                            pnl_usd = 0.0
+                            base_pnl_usd = 0.0
                         else:
-                            pnl_usd = -100.0
+                            base_pnl_usd = -100.0
                 else:
                     # Chế độ bình thường
                     if status == 'SL':
-                        pnl_usd = -100.0
+                        base_pnl_usd = -100.0
                     elif status == 'BE':
-                        pnl_usd = 0.0
+                        base_pnl_usd = 0.0
                     elif status == 'TP':
                         rr = abs(active_trade['tp'] - entry) / risk_dist
-                        pnl_usd = 100.0 * rr
-                
+                        base_pnl_usd = 100.0 * rr
+                        
+                pnl_usd = base_pnl_usd * trade_risk_mult
+ 
                 active_trade['exit_time'] = current_time
                 active_trade['exit_price'] = exit_price
                 active_trade['status'] = status
@@ -173,6 +216,7 @@ def run_simulation(df_m15, df_h1, symbol_name, tp_mode="H1_SWING"):
                 active_trade['pnl_points'] = (exit_price - entry) if active_trade['type'] == 'BUY' else (entry - exit_price)
                 
                 trades.append(active_trade)
+                
                 active_trade = None
                 
         # 2. Nếu chưa có lệnh, tìm tín hiệu mới
@@ -196,6 +240,7 @@ def run_simulation(df_m15, df_h1, symbol_name, tp_mode="H1_SWING"):
                     entry_price = signal['entry']
                     sl = signal['sl']
                     tp = signal['tp']
+                    risk_mult = float(signal.get('risk_mult', 1.0))
                     risk_dist = abs(entry_price - sl)
                     
                     if risk_dist > 0:
@@ -213,6 +258,7 @@ def run_simulation(df_m15, df_h1, symbol_name, tp_mode="H1_SWING"):
                             'sl': sl,
                             'tp': tp,
                             'risk_distance': risk_dist,
+                            'risk_mult': risk_mult,
                             'be_moved': False,
                             'partial_taken': False,
                             'partial_time': None,
@@ -224,6 +270,68 @@ def run_simulation(df_m15, df_h1, symbol_name, tp_mode="H1_SWING"):
                         }
         i += 1
     return trades
+
+def compute_trade_metrics(trades):
+    """Tính nhanh các chỉ số tổng hợp cho một tập lệnh."""
+    closed = [t for t in trades if t.get('exit_time') is not None]
+    if not closed:
+        return {
+            "trades": 0,
+            "win_rate": 0.0,
+            "return_pct": 0.0
+        }
+        
+    start_balance = 10000.0
+    risk_mult = float(config.RISK_PERCENT)
+    pnl_total = sum(t['pnl_usd'] * risk_mult for t in closed)
+    end_balance = start_balance + pnl_total
+    
+    tp_count = sum(1 for t in closed if t['status'] == 'TP')
+    partial_be_count = sum(1 for t in closed if t['status'] == 'BE' and t.get('partial_taken'))
+    win_rate = ((tp_count + partial_be_count) / len(closed)) * 100.0
+    ret_pct = ((end_balance - start_balance) / start_balance) * 100.0
+    
+    return {
+        "trades": len(closed),
+        "win_rate": win_rate,
+        "return_pct": ret_pct
+    }
+
+def run_walk_forward_validation(df_m15, df_h1, symbol_name, tp_mode='PARTIAL_1.5', folds=4):
+    """
+    Kiểm định walk-forward theo thời gian:
+    - Chia chuỗi M15 thành các block liên tiếp
+    - Mỗi block sau được xem như out-of-sample của block trước
+    """
+    if folds < 3:
+        folds = 3
+        
+    total_len = len(df_m15)
+    chunk = total_len // folds
+    if chunk < 500:
+        return []
+        
+    results = []
+    for i in range(1, folds):
+        start_idx = i * chunk
+        end_idx = (i + 1) * chunk if i < folds - 1 else total_len
+        
+        df_m15_test = df_m15.iloc[max(0, start_idx - 320):end_idx].reset_index(drop=True)
+        if df_m15_test.empty:
+            continue
+            
+        test_start_time = df_m15.iloc[start_idx]['time']
+        test_end_time = df_m15.iloc[end_idx - 1]['time']
+        
+        trades = run_simulation(df_m15_test, df_h1, symbol_name, tp_mode=tp_mode)
+        trades = [t for t in trades if t['entry_time'] >= test_start_time and t['entry_time'] <= test_end_time]
+        metrics = compute_trade_metrics(trades)
+        metrics['fold'] = i
+        metrics['from'] = test_start_time
+        metrics['to'] = test_end_time
+        results.append(metrics)
+        
+    return results
 
 def print_monthly_report(trades, symbol_info=""):
     """
@@ -347,7 +455,11 @@ def print_monthly_report(trades, symbol_info=""):
     # Xuất lịch sử lệnh ra CSV
     try:
         df_trades = pd.DataFrame(trades)
-        columns_to_save = ['symbol', 'type', 'entry_time', 'entry', 'sl', 'tp', 'risk_distance', 'be_moved', 'partial_taken', 'exit_time', 'exit_price', 'status', 'pnl_usd', 'pnl_points']
+        columns_to_save = [
+            'symbol', 'type', 'entry_time', 'entry', 'sl', 'tp',
+            'risk_distance', 'risk_mult',
+            'be_moved', 'partial_taken', 'exit_time', 'exit_price', 'status', 'pnl_usd', 'pnl_points'
+        ]
         df_trades = df_trades[columns_to_save]
         csv_file = config.BASE_DIR / f"backtest_report_{symbol_info.lower().replace(' ', '_')}.csv"
         df_trades.to_csv(csv_file, index=False, encoding='utf-8')
@@ -372,8 +484,8 @@ def run_backtest_experiment(symbol_name="XAUUSD", days=45):
         data_provider.shutdown_mt5()
         return
         
-    m15_count = int(days * 96) + 300
-    h1_count = int(days * 24) + 300
+    m15_count = estimate_bar_count(days, "M15")
+    h1_count = estimate_bar_count(days, "H1")
     
     print(f"Đang tải dữ liệu từ MT5 cho {actual_sym}...")
     df_h1 = data_provider.get_rates(actual_sym, 'H1', h1_count)
@@ -390,6 +502,12 @@ def run_backtest_experiment(symbol_name="XAUUSD", days=45):
     print("\nĐang mô phỏng chiến thuật chốt lời PARTIAL_1.5...")
     trades = run_simulation(df_m15, df_h1, symbol_name, tp_mode='PARTIAL_1.5')
     print_monthly_report(trades, symbol_info=symbol_name)
+    
+    wf_rows = run_walk_forward_validation(df_m15, df_h1, symbol_name, tp_mode='PARTIAL_1.5', folds=4)
+    if wf_rows:
+        print("\n[Walk-Forward OOS] Kiểm định độ ổn định theo thời gian:")
+        for r in wf_rows:
+            print(f"- Fold {r['fold']}: {r['from']} -> {r['to']} | trades={r['trades']}, WR={r['win_rate']:.1f}%, PnL={r['return_pct']:+.2f}%")
 
 def run_multi_symbol_backtest(days=45):
     """Chạy kiểm thử lịch sử trên toàn bộ các tài sản cho phép cùng lúc."""
@@ -403,6 +521,7 @@ def run_multi_symbol_backtest(days=45):
         return
         
     all_trades = []
+    wf_by_symbol = {}
     for sym in config.SYMBOLS:
         print(f"\n[+] Đang tải dữ liệu lịch sử và chạy mô phỏng cho {sym}...")
         actual_sym = data_provider.get_actual_symbol(sym)
@@ -410,8 +529,8 @@ def run_multi_symbol_backtest(days=45):
             print(f"Cảnh báo: Không thể chọn ký hiệu {actual_sym} trên sàn. Bỏ qua.")
             continue
             
-        m15_count = int(days * 96) + 300
-        h1_count = int(days * 24) + 300
+        m15_count = estimate_bar_count(days, "M15")
+        h1_count = estimate_bar_count(days, "H1")
         df_h1 = data_provider.get_rates(actual_sym, 'H1', h1_count)
         df_m15 = data_provider.get_rates(actual_sym, 'M15', m15_count)
         
@@ -423,10 +542,23 @@ def run_multi_symbol_backtest(days=45):
         all_trades.extend(trades)
         print(f"-> Hoàn tất {sym}: {len(trades)} lệnh")
         
+        wf_rows = run_walk_forward_validation(df_m15, df_h1, sym, tp_mode='PARTIAL_1.5', folds=4)
+        if wf_rows:
+            wf_by_symbol[sym] = wf_rows
+        
     data_provider.shutdown_mt5()
     
-    print_monthly_report(all_trades, symbol_info="XAUUSD_GBPUSD")
-
+    print_monthly_report(all_trades, symbol_info="XAUUSD")
+    
+    if wf_by_symbol:
+        print("\n" + "="*95)
+        print(" WALK-FORWARD OOS CHECK (ĐỘ ỔN ĐỊNH NGOÀI MẪU) ")
+        print("="*95)
+        for sym, rows in wf_by_symbol.items():
+            print(f"[{sym}]")
+            for r in rows:
+                print(f"  Fold {r['fold']}: {r['from']} -> {r['to']} | trades={r['trades']}, WR={r['win_rate']:.1f}%, PnL={r['return_pct']:+.2f}%")
+        print("="*95)
 
 if __name__ == "__main__":
     import sys

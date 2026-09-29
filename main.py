@@ -481,8 +481,12 @@ def main():
                             current_candle_time = df_m15['time'].iloc[-1]
                             
                             if current_candle_time != last_sent_candle_times[sym]:
+                                # Lấy spread hiện tại từ MT5
+                                sym_info = mt5.symbol_info(actual_sym)
+                                current_spread = sym_info.spread if sym_info is not None else 0.0
+                                
                                 # Phân tích theo chiến lược
-                                signal, skip_reason = strategy.analyze_market(sym, df_h1, df_m15)
+                                signal, skip_reason = strategy.analyze_market(sym, df_h1, df_m15, current_spread=current_spread)
                                 
                                 if signal is not None:
                                     print(f"🚀 PHÁT HIỆN TÍN HIỆU GIAO DỊCH [{actual_sym}]: {signal['action']} tại {signal['entry']:.5f}")
