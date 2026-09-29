@@ -102,8 +102,11 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
     7. Tính SL theo cấu trúc M15 (OB + Swing M15 +/- 0.5*ATR_M15) và TP theo H1/Fib Extension
     8. Kiểm tra tỷ lệ RR và các bộ lọc rủi ro
     """
+    df_m15 = df_m15.iloc[:-1].copy()
+    df_h1 = df_h1.iloc[:-1].copy()
     if len(df_m15) < 3 or len(df_h1) < 20:
         return None, "Dữ liệu nến không đủ để phân tích"
+    
 
     # Bước 1: Lọc phiên giao dịch theo giờ Việt Nam (UTC+7) dựa trên nến đã đóng iloc[-2]
     closed_idx = -2
@@ -146,7 +149,7 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
     
     # Bộ lọc biến động ATR spike trên H1
     if len(df_h1) >= 20:
-        atr_current = df_h1['atr'].iloc[-1]
+        atr_current = df_h1['atr'].iloc[-2]
         atr_mean = df_h1['atr'].iloc[-20:].mean()
         if atr_current > atr_mean * config.ATR_SPIKE_FILTER_MULT:
             reason = f"Thị trường biến động lớn (ATR {atr_current:.2f} > {config.ATR_SPIKE_FILTER_MULT}x ATR TB {atr_mean:.2f})"
@@ -265,7 +268,7 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
         
     # Bước 8: Tính Stop Loss (SL) theo cấu trúc M15 (Order Block M15 & Swing Low/High M15 + 0.5*ATR_M15)
     atr_m15 = df_m15['atr'].iloc[-2] if ('atr' in df_m15.columns and not pd.isna(df_m15['atr'].iloc[-2])) else (current_price * 0.001)
-    atr_h1 = df_h1['atr'].iloc[-1] if ('atr' in df_h1.columns and not pd.isna(df_h1['atr'].iloc[-1])) else (current_price * 0.001)
+    atr_h1 = df_h1['atr'].iloc[-2] if ('atr' in df_h1.columns and not pd.isna(df_h1['atr'].iloc[-2])) else (current_price * 0.001)
     atr_buffer = atr_m15 * 0.5
     
     if trend == 'UPTREND':
