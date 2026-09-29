@@ -59,7 +59,7 @@ if TRADE_PROFILE not in {"conservative", "balanced", "active", "sureshot"}:
 PROFILE_DEFAULTS = {
     "conservative": {
         "MIN_RR_RATIO": 1.5,
-        "MAX_RR_RATIO": 1.9,
+        "MAX_RR_RATIO": None,
         "MAX_RISK_ATR_MULT": 2.5,
         "MIN_RISK_ATR_MULT": 0.6,
         "ATR_SPIKE_FILTER_MULT": 1.6,
@@ -71,7 +71,7 @@ PROFILE_DEFAULTS = {
     },
     "balanced": {
         "MIN_RR_RATIO": 1.4,
-        "MAX_RR_RATIO": 1.9,
+        "MAX_RR_RATIO": None,
         "MAX_RISK_ATR_MULT": 3.0,
         "MIN_RISK_ATR_MULT": 0.45,
         "ATR_SPIKE_FILTER_MULT": 2.0,
@@ -95,7 +95,7 @@ PROFILE_DEFAULTS = {
     },
     "sureshot": {
         "MIN_RR_RATIO": 1.4,
-        "MAX_RR_RATIO": 1.9,
+        "MAX_RR_RATIO": None,
         "MAX_RISK_ATR_MULT": 3.0,
         "MIN_RISK_ATR_MULT": 0.45,
         "ATR_SPIKE_FILTER_MULT": 2.0,

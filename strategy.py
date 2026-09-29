@@ -320,11 +320,6 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
         reason = f"Tỷ lệ RR ({rr:.2f}) dưới mức tối thiểu {config.MIN_RR_RATIO} (SL: {sl:.5f}, TP: {tp:.5f})"
         print(f"[{symbol.upper()}] Tin hieu bi bo qua: {reason}")
         return None, reason
-        
-    if rr > config.MAX_RR_RATIO:
-        reason = f"Tỷ lệ RR ({rr:.2f}) vượt quá ngưỡng chất lượng {config.MAX_RR_RATIO}"
-        print(f"[{symbol.upper()}] Tin hieu bi bo qua: {reason}")
-        return None, reason
 
     risk_mult = 1.0
     if config.ENABLE_QUALITY_RISK_SCALING:
