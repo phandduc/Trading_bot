@@ -1,12 +1,15 @@
-# 🛡️ XAUUSD Trading Bot (MT5 + Telegram)
+#  XAUUSD Trading Bot (MT5 + Telegram)
 
-Bot giao dịch tự động Vàng (**XAUUSD**) trên sàn **MetaTrader 5** theo phương pháp **Smart Money Concepts (SMC) / Price Action**, hỗ trợ phát tín hiệu và quản lý lệnh nâng cao qua **Telegram**.
+Bot giao dịch tự động Vàng (**XAUUSD**) trên **MetaTrader 5** theo phương pháp **Smart Money Concepts (SMC) / Price Action**, hỗ trợ phát tín hiệu và quản lý lệnh nâng cao qua **Telegram**.
 
-> ⚠️ **Cảnh báo rủi ro:** Dự án phục vụ mục đích học tập và nghiên cứu. Giao dịch Vàng CFD có đòn bẩy cao và rủi ro lớn. Hãy thử nghiệm kỹ trên tài khoản **Demo** trước khi giao dịch thực tế.
+**Lưu ý trước khi đọc:** Dưới đây sẽ sử dụng các từ ngữ chuyên ngành. Yêu cầu tìm hiểu phương pháp SMC/PA; chỉ báo Fibonacci, ATR trước khi tiếp tục.
+>  **Cảnh báo rủi ro:** _Dự án phục vụ mục đích học tập và nghiên cứu không nhằm mục đích thương mại_.
+
+_Giao dịch Vàng CFD có đòn bẩy cao và rủi ro lớn. Hãy thử nghiệm kỹ trên tài khoản **Demo** trước khi giao dịch thực tế._
 
 ---
 
-## 🌟 Tính năng nổi bật & Logic cải tiến
+##  Tính năng nổi bật & Logic cải tiến
 
 1. **Chống Repainting / Look-Ahead Bias:**
    - Phân tích kỹ thuật, FVG, Order Block, Fibonacci và nến xác nhận hoàn toàn dựa trên nến M15 **đã đóng cửa (`iloc[-2]`)**, giúp kết quả Backtest khớp chính xác với Live Trading.
@@ -35,7 +38,7 @@ Bot giao dịch tự động Vàng (**XAUUSD**) trên sàn **MetaTrader 5** theo
 
 ---
 
-## 📁 Cấu trúc dự án
+##  Cấu trúc dự án
 
 ```
 .
@@ -55,7 +58,7 @@ Bot giao dịch tự động Vàng (**XAUUSD**) trên sàn **MetaTrader 5** theo
 
 ---
 
-## ⚙️ Cài đặt & Cấu hình
+##  Cài đặt & Cấu hình
 
 ### 1. Yêu cầu hệ thống
 - **Windows OS** (thư viện `MetaTrader5` yêu cầu Windows)
@@ -92,7 +95,7 @@ SESSION_END_HOUR=23
 
 ---
 
-## 📊 Tham số & Profiles
+##  Tham số & Profiles
 
 Bot hỗ trợ 4 Trade Profiles linh hoạt:
 
@@ -109,7 +112,7 @@ Bot hỗ trợ 4 Trade Profiles linh hoạt:
 
 ---
 
-## 🚀 Sử dụng
+##  Sử dụng
 
 ### 1. Khởi chạy Bot Live Trading
 ```bash
@@ -136,7 +139,7 @@ Hoặc double-click `run_backtest.bat`.
 
 ---
 
-## 🛡️ Cơ chế quản lý lệnh tự động
+##  Cơ chế quản lý lệnh tự động
 
 - **Khi mở lệnh:** Lưu thông tin ticket và giá entry vào `position_state.json`.
 - **Đạt 0.8 RR:** Bot dời Stop Loss về đúng giá **Entry (Break-Even)** để bảo toàn vốn.
@@ -145,7 +148,7 @@ Hoặc double-click `run_backtest.bat`.
 
 ---
 
-## 📜 Giấy phép & Tác giả
+##  Giấy phép & Tác giả
 
 - **Tác giả:** phandduc
 - **Dự án:** XAUUSD SMC Trading Bot
