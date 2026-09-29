@@ -2,10 +2,10 @@
 
 Bot giao dịch tự động Vàng (**XAUUSD**) trên **MetaTrader 5** theo phương pháp **Smart Money Concepts (SMC) / Price Action**, hỗ trợ phát tín hiệu và quản lý lệnh nâng cao qua **Telegram**.
 
-**Lưu ý trước khi đọc:** Dưới đây sẽ sử dụng các từ ngữ chuyên ngành. Yêu cầu tìm hiểu phương pháp SMC/PA; chỉ báo Fibonacci, ATR trước khi tiếp tục.
->  **Cảnh báo rủi ro:** _Dự án phục vụ mục đích học tập và nghiên cứu không nhằm mục đích thương mại_.
+**Lưu ý trước khi đọc:** Bot vẫn đang quá trình phát triển và tối ưu hệ thống. Dưới đây sẽ sử dụng các từ ngữ chuyên ngành. Yêu cầu tìm hiểu phương pháp SMC/PA; chỉ báo Fibonacci, ATR trước khi tiếp tục. 
+>  **Cảnh báo rủi ro:** _Dự án phục vụ mục đích học tập và nghiên cứu không nhằm mục đích thương mại, **miễn trừ trách nhiệm đối với mọi vấn đề phát sinh trong quá trình sử dụng**_.
 
-_Giao dịch Vàng CFD có đòn bẩy cao và rủi ro lớn. Hãy thử nghiệm kỹ trên tài khoản **Demo** trước khi giao dịch thực tế._
+_Giao dịch GOLD CFD có đòn bẩy cao và rủi ro lớn. Hãy thử nghiệm kỹ trên tài khoản **Demo** trước khi giao dịch thực tế._
 
 ---
 
