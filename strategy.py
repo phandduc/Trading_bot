@@ -106,7 +106,6 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
     df_h1 = df_h1.iloc[:-1].copy()
     if len(df_m15) < 3 or len(df_h1) < 20:
         return None, "Dữ liệu nến không đủ để phân tích"
-    
 
     # Bước 1: Lọc phiên giao dịch theo giờ Việt Nam (UTC+7) dựa trên nến đã đóng iloc[-2]
     closed_idx = -2
@@ -323,7 +322,7 @@ def analyze_market(symbol, df_h1, df_m15, current_spread=0.0):
         reason = f"Tỷ lệ RR ({rr:.2f}) dưới mức tối thiểu {config.MIN_RR_RATIO} (SL: {sl:.5f}, TP: {tp:.5f})"
         print(f"[{symbol.upper()}] Tin hieu bi bo qua: {reason}")
         return None, reason
-
+        
     risk_mult = 1.0
     if config.ENABLE_QUALITY_RISK_SCALING:
         rr_sweet = 1.4 <= rr <= 2.2

@@ -51,10 +51,12 @@ def find_swings(df, left=4, right=2):
     return swing_highs, swing_lows
 def get_market_trend(df, swing_highs, swing_lows):
     """
-    Xác định xu hướng thị trường dựa thuần túy trên cấu trúc đỉnh/đáy Price Action (HH/HL hoặc LH/LL).
-    Không sử dụng EMA. Vùng lọc thêm cấu trúc bị phá vỡ (CHOCH/MSS).
+    Xác định xu hướng thị trường dựa trên cấu trúc đỉnh/đáy Price Action (HH/HL hoặc LH/LL).
     
-    Trả về: 'UPTREND', 'DOWNTREND', hoặc 'SIDEWAYS'
+    - UPTREND (HH-HL): Phá đỉnh sh_new['price'] là BOS (Break of Structure - tiếp diễn UPTREND).
+      Chỉ khi giá đóng cửa dưới sl_new['price'] (CHoCH - gãy cấu trúc) mới trả về SIDEWAYS.
+    - DOWNTREND (LH-LL): Phá đáy sl_new['price'] là BOS (Break of Structure - tiếp diễn DOWNTREND).
+      Chỉ khi giá đóng cửa trên sh_new['price'] (CHoCH - gãy cấu trúc) mới trả về SIDEWAYS.
     """
     if len(swing_highs) < 2 or len(swing_lows) < 2:
         return 'SIDEWAYS'
@@ -64,19 +66,21 @@ def get_market_trend(df, swing_highs, swing_lows):
     
     current_close = df['close'].iloc[-1]
     
-    # Kiểm tra xem có cấu trúc bị phá vỡ chưa (Market Structure Shift / CHOCH)
-    if current_close < sl_new['price']:
-        return 'SIDEWAYS' # Phá đáy gần nhất -> Gãy cấu trúc tăng
-    if current_close > sh_new['price']:
-        return 'SIDEWAYS' # Phá đỉnh gần nhất -> Gãy cấu trúc giảm
-        
-    # Phân tích cấu trúc Price Action
     is_hh_hl = (sh_new['price'] > sh_old['price']) and (sl_new['price'] > sl_old['price'])
     is_ll_lh = (sl_new['price'] < sl_old['price']) and (sh_new['price'] < sh_old['price'])
     
     if is_hh_hl:
+        # UPTREND: Phá đỉnh sh_new['price'] là BOS -> UPTREND tiếp diễn.
+        # Chỉ báo SIDEWAYS khi đóng cửa dưới đáy sl_new['price'] (CHoCH).
+        if current_close < sl_new['price']:
+            return 'SIDEWAYS'
         return 'UPTREND'
+        
     elif is_ll_lh:
+        # DOWNTREND: Phá đáy sl_new['price'] là BOS -> DOWNTREND tiếp diễn.
+        # Chỉ báo SIDEWAYS khi đóng cửa trên đỉnh sh_new['price'] (CHoCH).
+        if current_close > sh_new['price']:
+            return 'SIDEWAYS'
         return 'DOWNTREND'
     
     return 'SIDEWAYS'
