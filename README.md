@@ -103,7 +103,6 @@ Bot hỗ trợ 4 Trade Profiles linh hoạt:
 |---|---|---|
 | `TRADE_PROFILE` | Cấu hình profile | `balanced` (`conservative` / `balanced` / `active` / `sureshot`) |
 | `MIN_RR_RATIO` | Tỷ lệ R:R tối thiểu | `1.4` |
-| `MAX_RR_RATIO` | Tỷ lệ R:R tối đa | `1.9` |
 | `MAX_ALLOWED_SPREAD` | Threshold spread tối đa (points) | `30.0` |
 | `MAX_RISK_ATR_MULT` | Ngưỡng SL/ATR H1 tối đa | `3.0` |
 | `MIN_RISK_ATR_MULT` | Ngưỡng SL/ATR H1 tối thiểu | `0.45` |
